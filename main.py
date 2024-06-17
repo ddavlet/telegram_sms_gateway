@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 import ipaddress
 import ngrok
+import uvicorn
 
 
 load_dotenv()
@@ -34,12 +35,26 @@ ENCODED_AUTH = base64.b64encode(AUTH_PASS.encode('utf-8')).decode('utf-8')
 
 client = httpx.AsyncClient()
 
+
 app = FastAPI()
+
+
+# ngrok setup
+listener = ngrok.forward(PORT, authtoken=NGROK_TOKEN)
+print(f'Ingress established at {listener.url()}')
+try:
+    response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
+    print(f"Status Code: {response.status_code}")
+    print(f"Response Text: {response.text}")
+except Exception as e:
+    print(f"Error on setting up webhook: {e}")
+
 
 # middleware restrictions (safety)
 allowed_ips = [
     ipaddress.ip_network(WHITELIST_IP1),   # Telegram IP range
     ipaddress.ip_network(WHITELIST_IP2), # Telegram IP range
+    ipaddress.ip_network('127.0.0.1'),
 ]
 
 @app.middleware('http')
@@ -50,16 +65,6 @@ async def ip_address_middleware(request: Request, call_next):
     else:
         response = await call_next(request)
     return response
-
-# ngrok setup
-listener = ngrok.forward(PORT, authtoken=NGROK_TOKEN)
-try:
-    response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
-    print(f'Ingress established at {listener.url()}')
-    print(f"Status Code: {response.status_code}")
-    print(f"Response Text: {response.text}")
-except Exception as e:
-    print(f"Error on setting up webhook: {e}")
 
 
 # functions to interact with user
@@ -207,7 +212,7 @@ async def phone_already_in_db(database: dict, phone: str, name: str, chat_id: in
         if recipient['phone'] == phone:
             if recipient['name'] != name:
                 await send(f'Phone {phone} already has recipient {recipient["name"]} associated with it. Cannot overwrite with new user {name}.', chat_id)
-            await send(f'Phone {phone} is already in database associated with {recipient['name']}', chat_id)
+            await send(f'Phone {phone} is already in database associated with {recipient["name"]}', chat_id)
             return True
     return False
 
@@ -285,6 +290,7 @@ async def extract_cmd(text: str, chat_id: int) -> tuple[str, str]:
 @app.post("/webhook")
 async def webhook(req: Request):
     data = await req.json()
+    print(data)
     try:
         print(f'***\nDebug, recieved command:\n{json.dumps(data, indent=2)}\n***')
         if 'message' in data:
@@ -301,3 +307,6 @@ async def webhook(req: Request):
     except KeyError as e:
         print(e)
         print(data)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=2350)
