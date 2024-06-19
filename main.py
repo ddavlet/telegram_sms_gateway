@@ -73,8 +73,8 @@ async def send(text: str, chat_id: int) -> None:
     response = await client.get(f"{BASE_URL}/sendMessage?chat_id={chat_id}&text={encoded_text}")
     print(f'Response from send: {response}')
 
-async def send_button(text: str, chat_id: int, buttons: json) -> None:
-    text = f'This is message to be sent:\n***\n{text}\n***'
+async def send_button(text: str, chat_id: int, buttons: json, cmd: str) -> None:
+    text = f'This is message to be sent [{cmd.upper()} MODE]:\n***\n{text}\n***'
     encoded_text = urllib.parse.quote(text)
     response = await client.get(f"{BASE_URL}/sendMessage?chat_id={chat_id}&text={encoded_text}&reply_markup={buttons}")
     print(f'Response from send_button: {response}')
@@ -90,7 +90,7 @@ async def get_confirmation(arg: str, chat_id: int, cmd: str) -> None:
                             [{'text': 'Cancel', 'callback_data': 'Cancel'}]],
     }
     print(arg)
-    await send_button(arg, chat_id, json.dumps(buttons))
+    await send_button(arg, chat_id, json.dumps(buttons), cmd)
 
 async def send_contacts_count(chat_id: int) -> None:
     contacts = get_recipients()
