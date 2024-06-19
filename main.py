@@ -6,11 +6,11 @@ import httpx
 import urllib.parse
 import pandas as pd
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 import ipaddress
 import ngrok
-import uvicorn
+# import uvicorn
 
 
 load_dotenv()
@@ -40,7 +40,7 @@ app = FastAPI()
 
 
 # ngrok setup
-listener = ngrok.forward(PORT, authtoken=NGROK_TOKEN)
+listener = ngrok.forward(f'localhost:{PORT}', authtoken=NGROK_TOKEN)
 print(f'Ingress established at {listener.url()}')
 try:
     response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
@@ -61,7 +61,7 @@ allowed_ips = [
 async def ip_address_middleware(request: Request, call_next):
     client_ip = ipaddress.ip_address(request.client.host)
     if not any(client_ip in subnet for subnet in allowed_ips):
-        return JSONResponse(status_code=400, content={'message':'not allowed'})
+        return PlainTextResponse(status_code=400, content='Not allowed')
     else:
         response = await call_next(request)
     return response
@@ -308,5 +308,5 @@ async def webhook(req: Request):
         print(e)
         print(data)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=2350)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="localhost", port=2340)
