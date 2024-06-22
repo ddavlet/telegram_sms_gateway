@@ -1,2 +1,2 @@
 #!/bin/sh
-fastapi dev --port 2340 main.py
+fastapi run --port 2340 main.py
