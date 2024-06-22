@@ -51,17 +51,14 @@ app = FastAPI()
 
 # Run mode get my ip
 
-async def get_my_ip() -> None:
-    try:
-        response = await client.get('https://api.ipify.org')
-        print("IP retrieved successfully")
-        response = await client.get(f'{SETWEBHOOK_URL}?url={response.text}/webhook')
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Text: {response.text}")
-    except Exception as e:
-        print("Couldn't retrieve ip")
-
-get_my_ip()
+try:
+    response = httpx.get('https://api.ipify.org')
+    print("IP retrieved successfully")
+    response = httpx.get(f'{SETWEBHOOK_URL}?url={response.text}/webhook')
+    print(f"Status Code: {response.status_code}")
+    print(f"Response Text: {response.text}")
+except Exception as e:
+    print("Couldn't retrieve ip")
 
 # middleware restrictions (safety)
 allowed_ips = [
