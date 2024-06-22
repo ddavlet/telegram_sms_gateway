@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 import ipaddress
-import ngrok
+# import ngrok
 # import uvicorn
 
 
@@ -39,22 +39,21 @@ client = httpx.AsyncClient()
 app = FastAPI()
 
 
-# ngrok setup
-listener = ngrok.forward(f'localhost:{PORT}', authtoken=NGROK_TOKEN)
-print(f'Ingress established at {listener.url()}')
-try:
-    response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
-    print(f"Status Code: {response.status_code}")
-    print(f"Response Text: {response.text}")
-except Exception as e:
-    print(f"Error on setting up webhook: {e}")
+# ngrok setup for debug
+# listener = ngrok.forward(f'localhost:{PORT}', authtoken=NGROK_TOKEN)
+# print(f'Ingress established at {listener.url()}')
+# try:
+#     response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
+#     print(f"Status Code: {response.status_code}")
+#     print(f"Response Text: {response.text}")
+# except Exception as e:
+#     print(f"Error on setting up webhook: {e}")
 
 
 # middleware restrictions (safety)
 allowed_ips = [
     ipaddress.ip_network(WHITELIST_IP1),   # Telegram IP range
     ipaddress.ip_network(WHITELIST_IP2), # Telegram IP range
-    ipaddress.ip_network('127.0.0.1'),
 ]
 
 @app.middleware('http')
