@@ -54,7 +54,7 @@ app = FastAPI()
 try:
     response = httpx.get('https://api.ipify.org')
     print("IP retrieved successfully")
-    response = httpx.get(f'{SETWEBHOOK_URL}?url={response.text}:{PORT}/webhook')
+    response = httpx.get(f'{SETWEBHOOK_URL}?url={response.text}:{PORT}/webhook?drop_pending_updates=True')
     print(f"Status Code: {response.status_code}")
     print(f"Response Text: {response.text}")
 except Exception as e:
