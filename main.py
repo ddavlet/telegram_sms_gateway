@@ -27,6 +27,7 @@ WHITELIST_IP2 = os.getenv('WHITELIST_IP2')
 SERVICE_API_URL = os.getenv('SERVICE_API_URL')
 # TEST_API_URL = os.getenv('TEST_API_URL')
 PORT = os.getenv('PORT')
+PUB_URL = os.getenv('PUB_URL')
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
 BASE_FILE_URL = f"https://api.telegram.org/file/bot{BOT_TOKEN}"
 SETWEBHOOK_URL = f'https://api.telegram.org/bot{BOT_TOKEN}/setWebhook'
@@ -54,7 +55,7 @@ app = FastAPI()
 try:
     response = httpx.get('https://api.ipify.org')
     print("IP retrieved successfully")
-    response = httpx.get(f'{SETWEBHOOK_URL}?url=sms.ddavlety.com:{PORT}/webhook?drop_pending_updates=True')
+    response = httpx.get(f'{SETWEBHOOK_URL}?url={PUB_URL}:{PORT}/webhook?drop_pending_updates=True')
     print(f"Status Code: {response.status_code}")
     print(f"Response Text: {response.text}")
 except Exception as e:
