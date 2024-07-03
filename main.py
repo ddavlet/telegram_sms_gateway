@@ -27,7 +27,7 @@ DATA_FILE = os.getenv('DATA_FILE')
 WHITELIST_IP1 = os.getenv('WHITELIST_IP1')
 WHITELIST_IP2 = os.getenv('WHITELIST_IP2')
 SERVICE_API_URL = os.getenv('SERVICE_API_URL')
-# TEST_API_URL = os.getenv('TEST_API_URL')
+TEST_API_URL = os.getenv('TEST_API_URL')
 PORT = os.getenv('PORT')
 PUB_URL = os.getenv('PUB_URL')
 BASE_URL = f"https://api.telegram.org/bot{BOT_TOKEN}"
@@ -44,31 +44,31 @@ app = FastAPI()
 
 # ngrok setup for debug
 # listener = ngrok.forward(f'localhost:{PORT}', authtoken=NGROK_TOKEN)
-# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
 # print(f'Ingress established at {listener.url()}')
 # try:
 #     response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
-# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
 # print(f"Status Code: {response.status_code}")
-# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
 # print(f"Response Text: {response.text}")
 # except Exception as e:
-# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
 # print(f"Error on setting up webhook: {e}")
 
 # Run mode get my ip
 
 try:
     # response = httpx.get('https://api.ipify.org')
-    # print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    # print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     # print("IP retrieved successfully")
     response = httpx.get(f'{SETWEBHOOK_URL}?url={PUB_URL}:{PORT}/webhook?drop_pending_updates=True')
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(f"Status Code: {response.status_code}")
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(f"Response Text: {response.text}")
 except Exception as e:
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print("Couldn't retrieve ip")
 
 # middleware restrictions (safety)
@@ -91,19 +91,19 @@ async def ip_address_middleware(request: Request, call_next):
 async def send(text: str, chat_id: int) -> None:
     encoded_text = urllib.parse.quote(text)
     response = await client.get(f"{BASE_URL}/sendMessage?chat_id={chat_id}&text={encoded_text}")
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(f'Response from send: {response}')
 
 async def send_button(text: str, chat_id: int, buttons: json, cmd: str) -> None:
     text = f'This is message to be sent [{cmd.upper()} MODE]:\n***\n{text}\n***'
     encoded_text = urllib.parse.quote(text)
     response = await client.get(f"{BASE_URL}/sendMessage?chat_id={chat_id}&text={encoded_text}&reply_markup={buttons}")
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(f'Response from send_button: {response}')
 
 async def edit_send_button(chat_id: int, message_id: int, callback_id: int) -> None:
     response = await client.get(f"{BASE_URL}/editMessageReplyMarkup?chat_id={chat_id}&message_id={message_id}")
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(f'Response from edit_send_button: {response}')
     response = await client.get(f"{BASE_URL}/answerCallbackQuery?callback_query_id={callback_id}")
 
@@ -112,7 +112,7 @@ async def get_confirmation(arg: str, chat_id: int, cmd: str) -> None:
         'inline_keyboard': [[{'text': 'Ok', 'callback_data': f'/{cmd} Ok'}],
                             [{'text': 'Cancel', 'callback_data': 'Cancel'}]],
     }
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(arg)
     await send_button(arg, chat_id, json.dumps(buttons), cmd)
 
@@ -126,6 +126,10 @@ def extract_text_between_markers(text) -> str:
     if match:
         return match.group(1)
     return None
+
+def chunk_list(lst, chunk_size):
+    for i in range(0, len(lst), chunk_size):
+        yield lst[i:i + chunk_size]
 
 def get_recipients() -> list:
     recipients_list = []
@@ -162,25 +166,26 @@ async def handle_bulk(arg: str, chat_id: int) -> None:
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization': f"Basic {ENCODED_AUTH}"
     }
-    body = {
-        "priority": 8,
-        "sms": {
-            "originator": ORIGINATOR,
-            "content": {
-                "text": arg
-            }
-        },
-        "messages": []
-    }
-    body['messages'] = get_recipients()
-    try:
-        response = await client.post(SERVICE_API_URL, data=json.dumps(body), headers=headers)
-        # response = await client.post(TEST_API_URL, data=json.dumps(body, ensure_ascii=False), headers=headers)
-        await send(f"Status Code: {response.status_code}", chat_id)
-        await send(f"Response Text: {response.text}", chat_id)
-    except Exception as e:
-        await send(f"Error on request to sms service server: {e}", chat_id)
+    recipients = get_recipients()
+    for chunk in chunk_list(recipients, 200):
+        body = {
+            "priority": 8,
+            "sms": {
+                "originator": ORIGINATOR,
+                "content": {
+                    "text": arg
+                }
+            },
+            "messages": chunk
+        }
 
+        try:
+            # response = await client.post(SERVICE_API_URL, data=json.dumps(body), headers=headers)
+            response = await client.post(TEST_API_URL, data=json.dumps(body), headers=headers)
+            await send(f"Status Code: {response.status_code}", chat_id)
+            await send(f"Response Text: {response.text}", chat_id)
+        except Exception as e:
+            await send(f"Error on request to sms service server: {e}", chat_id)
 async def handle_test(arg: str, chat_id: int) -> None:
     await send('TEST HANDLED', chat_id)
     headers = {
@@ -203,8 +208,8 @@ async def handle_test(arg: str, chat_id: int) -> None:
         ]
     }
     try:
-        response = await client.post(SERVICE_API_URL, data=json.dumps(body), headers=headers)
-        # response = await client.post(TEST_API_URL, data=json.dumps(body), headers=headers)
+        # response = await client.post(SERVICE_API_URL, data=json.dumps(body), headers=headers)
+        response = await client.post(TEST_API_URL, data=json.dumps(body), headers=headers)
         await send(f"Status Code: {response.status_code}", chat_id)
         await send(f"Response Text: {response.text}", chat_id)
     except Exception as e:
@@ -321,10 +326,10 @@ async def extract_cmd(text: str, chat_id: int) -> tuple[str, str]:
 @app.post("/webhook")
 async def webhook(req: Request):
     data = await req.json()
-    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
     print(data)
     try:
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
         print(f'***\nDebug, recieved command:\n{json.dumps(data, indent=2)}\n***')
         if 'message' in data:
             chat_id = data['message']['chat']['id']
@@ -338,9 +343,9 @@ async def webhook(req: Request):
             await handle_send(data['callback_query']['data'],
                               chat_id, data['callback_query']['message']['message_id'], data['callback_query']['id'], data['callback_query']["message"]['text'])
     except KeyError as e:
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
         print(e)
-        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
         print(data)
 
 # if __name__ == "__main__":
