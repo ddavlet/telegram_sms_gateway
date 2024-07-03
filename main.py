@@ -10,6 +10,7 @@ from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 import ipaddress
 # import ngrok
+import re
 # import uvicorn
 
 
@@ -53,8 +54,8 @@ app = FastAPI()
 # Run mode get my ip
 
 try:
-    response = httpx.get('https://api.ipify.org')
-    print("IP retrieved successfully")
+    # response = httpx.get('https://api.ipify.org')
+    # print("IP retrieved successfully")
     response = httpx.get(f'{SETWEBHOOK_URL}?url={PUB_URL}:{PORT}/webhook?drop_pending_updates=True')
     print(f"Status Code: {response.status_code}")
     print(f"Response Text: {response.text}")
@@ -96,7 +97,7 @@ async def edit_send_button(chat_id: int, message_id: int, callback_id: int) -> N
 
 async def get_confirmation(arg: str, chat_id: int, cmd: str) -> None:
     buttons = {
-        'inline_keyboard': [[{'text': 'Ok', 'callback_data': f'/{cmd} {arg}'}],
+        'inline_keyboard': [[{'text': 'Ok', 'callback_data': f'/{cmd} Ok'}],
                             [{'text': 'Cancel', 'callback_data': 'Cancel'}]],
     }
     print(arg)
@@ -107,6 +108,12 @@ async def send_contacts_count(chat_id: int) -> None:
     await send (f'Number of contacts in database: {len(contacts)}', chat_id)
 
 # utility func
+def extract_text_between_markers(text) -> str:
+    match = re.search(r'\*\*\*\n(.*?)\n\*\*\*', text, re.DOTALL)
+    if match:
+        return match.group(1)
+    return None
+
 def get_recipients() -> list:
     recipients_list = []
     i = 0
@@ -201,7 +208,7 @@ async def handle_cmd(text: str, chat_id: int) -> None:
     else:
         await send(f"Command {cmd} not implemented.", chat_id)
 
-async def handle_send(data: str, chat_id: int, message_id: int, callback_id: int) -> None:
+async def handle_send(data: str, chat_id: int, message_id: int, callback_id: int, text: str) -> None:
     if (data == 'Cancel'):
         await edit_send_button(chat_id, message_id, callback_id)
         await send('Opperation canceled', chat_id)
@@ -209,10 +216,11 @@ async def handle_send(data: str, chat_id: int, message_id: int, callback_id: int
         await edit_send_button(chat_id, message_id, callback_id)
         await send('Message(s) sent', chat_id)
         cmd, arg = await extract_cmd(data, chat_id)
+        text = extract_text_between_markers(text)
         if cmd == 'bulk':
-            await handle_bulk(arg, chat_id)
+            await handle_bulk(text, chat_id)
         elif cmd == 'test':
-            await handle_test(arg, chat_id)
+            await handle_test(text, chat_id)
         else:
             await send("Unexpected error occured", chat_id)
 
@@ -313,7 +321,7 @@ async def webhook(req: Request):
         elif 'callback_query' in data:
             chat_id = data['callback_query']['message']['chat']['id']
             await handle_send(data['callback_query']['data'],
-                              chat_id, data['callback_query']['message']['message_id'], data['callback_query']['id'])
+                              chat_id, data['callback_query']['message']['message_id'], data['callback_query']['id'], data['callback_query']["message"]['text'])
     except KeyError as e:
         print(e)
         print(data)
