@@ -180,8 +180,8 @@ async def handle_bulk(arg: str, chat_id: int) -> None:
         }
 
         try:
-            # response = await client.post(SERVICE_API_URL, data=json.dumps(body), headers=headers)
-            response = await client.post(TEST_API_URL, data=json.dumps(body), headers=headers)
+            response = await client.post(SERVICE_API_URL, data=json.dumps(body), headers=headers)
+            # response = await client.post(TEST_API_URL, data=json.dumps(body), headers=headers)
             await send(f"Status Code: {response.status_code}", chat_id)
             await send(f"Response Text: {response.text}", chat_id)
         except Exception as e:
