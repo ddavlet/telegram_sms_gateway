@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
 from dotenv import load_dotenv
 import ipaddress
+from datetime import datetime
 # import ngrok
 import re
 # import uvicorn
@@ -43,23 +44,31 @@ app = FastAPI()
 
 # ngrok setup for debug
 # listener = ngrok.forward(f'localhost:{PORT}', authtoken=NGROK_TOKEN)
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
 # print(f'Ingress established at {listener.url()}')
 # try:
 #     response = httpx.get(f'{SETWEBHOOK_URL}?url={listener.url()}/webhook')
-#     print(f"Status Code: {response.status_code}")
-#     print(f"Response Text: {response.text}")
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f"Status Code: {response.status_code}")
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f"Response Text: {response.text}")
 # except Exception as e:
-#     print(f"Error on setting up webhook: {e}")
+# print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+# print(f"Error on setting up webhook: {e}")
 
 # Run mode get my ip
 
 try:
     # response = httpx.get('https://api.ipify.org')
+    # print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     # print("IP retrieved successfully")
     response = httpx.get(f'{SETWEBHOOK_URL}?url={PUB_URL}:{PORT}/webhook?drop_pending_updates=True')
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(f"Status Code: {response.status_code}")
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(f"Response Text: {response.text}")
 except Exception as e:
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print("Couldn't retrieve ip")
 
 # middleware restrictions (safety)
@@ -82,16 +91,19 @@ async def ip_address_middleware(request: Request, call_next):
 async def send(text: str, chat_id: int) -> None:
     encoded_text = urllib.parse.quote(text)
     response = await client.get(f"{BASE_URL}/sendMessage?chat_id={chat_id}&text={encoded_text}")
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(f'Response from send: {response}')
 
 async def send_button(text: str, chat_id: int, buttons: json, cmd: str) -> None:
     text = f'This is message to be sent [{cmd.upper()} MODE]:\n***\n{text}\n***'
     encoded_text = urllib.parse.quote(text)
     response = await client.get(f"{BASE_URL}/sendMessage?chat_id={chat_id}&text={encoded_text}&reply_markup={buttons}")
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(f'Response from send_button: {response}')
 
 async def edit_send_button(chat_id: int, message_id: int, callback_id: int) -> None:
     response = await client.get(f"{BASE_URL}/editMessageReplyMarkup?chat_id={chat_id}&message_id={message_id}")
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(f'Response from edit_send_button: {response}')
     response = await client.get(f"{BASE_URL}/answerCallbackQuery?callback_query_id={callback_id}")
 
@@ -100,6 +112,7 @@ async def get_confirmation(arg: str, chat_id: int, cmd: str) -> None:
         'inline_keyboard': [[{'text': 'Ok', 'callback_data': f'/{cmd} Ok'}],
                             [{'text': 'Cancel', 'callback_data': 'Cancel'}]],
     }
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(arg)
     await send_button(arg, chat_id, json.dumps(buttons), cmd)
 
@@ -308,8 +321,10 @@ async def extract_cmd(text: str, chat_id: int) -> tuple[str, str]:
 @app.post("/webhook")
 async def webhook(req: Request):
     data = await req.json()
+    print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
     print(data)
     try:
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
         print(f'***\nDebug, recieved command:\n{json.dumps(data, indent=2)}\n***')
         if 'message' in data:
             chat_id = data['message']['chat']['id']
@@ -323,7 +338,9 @@ async def webhook(req: Request):
             await handle_send(data['callback_query']['data'],
                               chat_id, data['callback_query']['message']['message_id'], data['callback_query']['id'], data['callback_query']["message"]['text'])
     except KeyError as e:
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
         print(e)
+        print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
         print(data)
 
 # if __name__ == "__main__":
