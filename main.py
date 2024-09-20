@@ -38,9 +38,7 @@ ENCODED_AUTH = base64.b64encode(AUTH_PASS.encode('utf-8')).decode('utf-8')
 
 client = httpx.AsyncClient()
 
-
 app = FastAPI()
-
 
 # ngrok setup for debug
 # listener = ngrok.forward(f'localhost:{PORT}', authtoken=NGROK_TOKEN)
@@ -69,7 +67,7 @@ try:
     print(f"Response Text: {response.text}")
 except Exception as e:
     print(f'{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}:\n')
-    print("Couldn't retrieve ip")
+    print("Webhook setup failed")
 
 # middleware restrictions (safety)
 allowed_ips = [
